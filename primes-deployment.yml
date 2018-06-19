@@ -1,0 +1,55 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: primes-backend
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        application: primes-backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9095"
+    spec:
+      containers:
+      - name: primes-backend
+        image: mboye/primes-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: www
+        - containerPort: 9095
+          name: metrics
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 50Mi
+          limits:
+            cpu: 2000m
+            memory: 100Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: primes-backend
+spec:
+  ports:
+    - name: www
+      port: 80
+      targetPort: 8080
+  selector:
+    application: primes-backend
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: primes-backend
+spec:
+  rules:
+  - host: "{{ HOSTNAME }}"
+    http:
+      paths:
+         - backend:
+            serviceName: primes-backend
+            servicePort: 80
